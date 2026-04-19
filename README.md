@@ -16,13 +16,13 @@ v0.1 — core tool set implemented: `generate_image`, `generate_variations`, `ge
 ### npx (no install required)
 
 ```bash
-npx comfyui-mcp --comfyui-url http://your-comfyui-host:8188
+npx @miller-joe/comfyui-mcp --comfyui-url http://your-comfyui-host:8188
 ```
 
 ### npm
 
 ```bash
-npm install -g comfyui-mcp
+npm install -g @miller-joe/comfyui-mcp
 comfyui-mcp --comfyui-url http://your-comfyui-host:8188
 ```
 

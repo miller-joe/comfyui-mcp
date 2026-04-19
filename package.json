@@ -1,5 +1,5 @@
 {
-  "name": "comfyui-mcp",
+  "name": "@miller-joe/comfyui-mcp",
   "version": "0.1.0",
   "description": "MCP server for ComfyUI — text-to-image generation via the Model Context Protocol.",
   "license": "MIT",
@@ -8,6 +8,9 @@
   "main": "./dist/index.js",
   "bin": {
     "comfyui-mcp": "./dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",
