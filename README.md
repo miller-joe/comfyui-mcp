@@ -9,7 +9,7 @@ Part of the [MCP Server Series](https://github.com/miller-joe).
 
 ## Status
 
-v0.1 — initial scaffold. The `generate_image` tool is implemented. More tools in progress (see Roadmap).
+v0.1 — core tool set implemented: `generate_image`, `generate_variations`, `generate_with_workflow`, `refine_image`, `list_models`, `list_workflows`, `upload_image`. See Roadmap for what's next.
 
 ## Install
 
@@ -63,20 +63,47 @@ The default checkpoint must match a file installed in your ComfyUI `models/check
 
 Generate an image from a text prompt using ComfyUI's default txt2img workflow.
 
-**Parameters:**
+Parameters: `prompt` (required), `negative_prompt`, `width`, `height`, `steps`, `cfg`, `seed`, `checkpoint`.
 
-| Name | Type | Default | Description |
-|---|---|---|---|
-| `prompt` | string (required) | — | Text description of the image |
-| `negative_prompt` | string | `""` | What to avoid in the image |
-| `width` | int (64–2048) | 1024 | Image width in pixels |
-| `height` | int (64–2048) | 1024 | Image height in pixels |
-| `steps` | int (1–150) | 25 | Number of diffusion steps |
-| `cfg` | float (1–30) | 7 | Classifier-free guidance scale |
-| `seed` | int | random | Seed for reproducibility |
-| `checkpoint` | string | env default | Override the default checkpoint |
+### `generate_variations`
 
-**Returns:** One or more image URLs served directly by ComfyUI (`http://<comfyui>/view?filename=…`). These URLs can be passed straight to any client that accepts image URLs.
+Generate multiple variations of the same prompt by varying the seed. Returns all images at once.
+
+Parameters: `prompt` (required), `count` (2–16, default 4), plus the same generation params as `generate_image`, with `base_seed` instead of `seed`.
+
+### `generate_with_workflow`
+
+Submit an arbitrary ComfyUI workflow JSON (full node graph) and return the resulting image URLs. Use this for custom workflows — ControlNet, upscaling, or anything exported from ComfyUI's **Save (API Format)**.
+
+Parameter: `workflow` (object) — the complete node graph.
+
+### `refine_image`
+
+Run img2img on a source image: fetches a source URL, uploads it to ComfyUI, and runs a denoising pass guided by a new prompt. Lower `denoise` preserves more of the original; higher gives the prompt more freedom.
+
+Parameters: `prompt`, `source_image_url` (required), `denoise` (0–1, default 0.5), plus standard generation params.
+
+### `list_models`
+
+List available checkpoints, LoRAs, samplers, or schedulers on the ComfyUI instance.
+
+Parameter: `kind` — one of `checkpoints` (default), `loras`, `samplers`, `schedulers`.
+
+### `list_workflows`
+
+List built-in workflow templates shipped with this server (currently `txt2img`, `img2img`).
+
+### `upload_image`
+
+Upload a reference image to ComfyUI for use in img2img, ControlNet, or IP-Adapter workflows.
+
+Parameters: `source_url` **or** `image_base64` (one required), `filename` (optional), `overwrite` (default false).
+
+**Returns:** the stored filename, which can be used as the `image` input in workflow nodes like `LoadImage`.
+
+### Return format
+
+All generation tools return image URLs served directly by the ComfyUI instance (`http://<comfyui>/view?filename=…`). These URLs can be passed straight to any client that accepts image URLs.
 
 ## Architecture
 
@@ -106,13 +133,15 @@ Requires Node 20+.
 ## Roadmap
 
 - [x] `generate_image` — text-to-image with default workflow
-- [ ] `generate_with_workflow` — submit arbitrary/named workflows
-- [ ] `list_models` / `list_workflows`
-- [ ] `upload_image` — reference images for img2img / ControlNet / IP-Adapter
-- [ ] `generate_variations` — batch variations of a prompt
-- [ ] `refine_image` — iterative refinement using prior generations
+- [x] `generate_with_workflow` — submit arbitrary workflows
+- [x] `list_models` / `list_workflows`
+- [x] `upload_image` — reference images for img2img / ControlNet / IP-Adapter
+- [x] `generate_variations` — batch variations of a prompt
+- [x] `refine_image` — img2img refinement from a source URL
+- [ ] ControlNet / IP-Adapter workflow helpers
+- [ ] Upscale workflow template
 - [ ] Image serving endpoint — return image bytes directly from the MCP server (for clients that can't reach ComfyUI)
-- [ ] Workflow template library — bundled txt2img, img2img, upscale, ControlNet workflows
+- [ ] WebSocket progress events for long-running generations
 
 ## License
 

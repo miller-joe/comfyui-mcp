@@ -1,8 +1,11 @@
+import { Buffer } from "node:buffer";
 import type {
   GenerateParams,
   GenerateResult,
   HistoryEntry,
+  ObjectInfo,
   PromptSubmitResponse,
+  UploadResult,
   Workflow,
 } from "./types.js";
 import { txt2img } from "./workflows.js";
@@ -26,12 +29,16 @@ export class ComfyUIClient {
       seed: params.seed ?? Math.floor(Math.random() * 2 ** 32),
       checkpoint: params.checkpoint ?? DEFAULT_CHECKPOINT,
     });
+    return this.runWorkflow(workflow);
+  }
 
+  async runWorkflow(workflow: Workflow): Promise<GenerateResult> {
     const { prompt_id } = await this.submit(workflow);
     const entry = await this.waitForCompletion(prompt_id);
-    const images = extractImageUrls(entry, this.baseUrl);
-
-    return { promptId: prompt_id, images };
+    return {
+      promptId: prompt_id,
+      images: extractImageUrls(entry, this.baseUrl),
+    };
   }
 
   async submit(workflow: Workflow): Promise<PromptSubmitResponse> {
@@ -65,6 +72,82 @@ export class ComfyUIClient {
     return body[promptId] ?? null;
   }
 
+  async getObjectInfo(nodeClass?: string): Promise<ObjectInfo> {
+    const url = nodeClass
+      ? `${this.baseUrl}/object_info/${encodeURIComponent(nodeClass)}`
+      : `${this.baseUrl}/object_info`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`ComfyUI object_info fetch failed: ${res.status}`);
+    }
+    return (await res.json()) as ObjectInfo;
+  }
+
+  async listCheckpoints(): Promise<string[]> {
+    return this.listNodeOptions("CheckpointLoaderSimple", "ckpt_name");
+  }
+
+  async listLoras(): Promise<string[]> {
+    return this.listNodeOptions("LoraLoader", "lora_name");
+  }
+
+  async listSamplers(): Promise<string[]> {
+    return this.listNodeOptions("KSampler", "sampler_name");
+  }
+
+  async listSchedulers(): Promise<string[]> {
+    return this.listNodeOptions("KSampler", "scheduler");
+  }
+
+  async uploadImage(
+    data: Buffer | Uint8Array,
+    filename: string,
+    options: { overwrite?: boolean; subfolder?: string } = {},
+  ): Promise<UploadResult> {
+    const form = new FormData();
+    const blob = new Blob([new Uint8Array(data)], { type: "image/png" });
+    form.append("image", blob, filename);
+    form.append("overwrite", options.overwrite ? "true" : "false");
+    if (options.subfolder) form.append("subfolder", options.subfolder);
+
+    const res = await fetch(`${this.baseUrl}/upload/image`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) {
+      throw new Error(
+        `ComfyUI image upload failed: ${res.status} ${await res.text()}`,
+      );
+    }
+    return (await res.json()) as UploadResult;
+  }
+
+  async fetchAndUploadImage(
+    sourceUrl: string,
+    filename?: string,
+  ): Promise<UploadResult> {
+    const res = await fetch(sourceUrl);
+    if (!res.ok) {
+      throw new Error(
+        `Failed to fetch source image ${sourceUrl}: ${res.status}`,
+      );
+    }
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const name = filename ?? deriveFilename(sourceUrl);
+    return this.uploadImage(buffer, name);
+  }
+
+  private async listNodeOptions(
+    nodeClass: string,
+    fieldName: string,
+  ): Promise<string[]> {
+    const info = await this.getObjectInfo(nodeClass);
+    const node = info[nodeClass];
+    const field = node?.input?.required?.[fieldName];
+    if (!Array.isArray(field) || !Array.isArray(field[0])) return [];
+    return field[0] as string[];
+  }
+
   private async waitForCompletion(promptId: string): Promise<HistoryEntry> {
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     while (Date.now() < deadline) {
@@ -80,7 +163,10 @@ export class ComfyUIClient {
   }
 }
 
-function extractImageUrls(entry: HistoryEntry, baseUrl: string): string[] {
+export function extractImageUrls(
+  entry: HistoryEntry,
+  baseUrl: string,
+): string[] {
   const urls: string[] = [];
   for (const output of Object.values(entry.outputs)) {
     for (const image of output.images ?? []) {
@@ -93,4 +179,15 @@ function extractImageUrls(entry: HistoryEntry, baseUrl: string): string[] {
     }
   }
   return urls;
+}
+
+function deriveFilename(sourceUrl: string): string {
+  try {
+    const url = new URL(sourceUrl);
+    const last = url.pathname.split("/").pop() ?? "";
+    if (last && /\.(png|jpg|jpeg|webp)$/i.test(last)) return last;
+  } catch {
+    // fall through
+  }
+  return `upload-${Date.now()}.png`;
 }

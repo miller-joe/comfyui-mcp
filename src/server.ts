@@ -3,7 +3,10 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { ComfyUIClient } from "./comfyui/client.js";
-import { registerGenerateImageTool } from "./tools/generate.js";
+import { registerGenerateTools } from "./tools/generate.js";
+import { registerRefineTool } from "./tools/refine.js";
+import { registerModelTools } from "./tools/models.js";
+import { registerImageTools } from "./tools/images.js";
 
 export interface ServerConfig {
   host: string;
@@ -19,7 +22,10 @@ export async function startServer(config: ServerConfig): Promise<void> {
     version: "0.1.0",
   });
 
-  registerGenerateImageTool(server, client);
+  registerGenerateTools(server, client);
+  registerRefineTool(server, client);
+  registerModelTools(server, client);
+  registerImageTools(server, client);
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),

@@ -38,3 +38,24 @@ export interface GenerateResult {
   promptId: string;
   images: string[];
 }
+
+export interface UploadResult {
+  name: string;
+  subfolder: string;
+  type: string;
+}
+
+export interface ObjectInfoNode {
+  input?: {
+    required?: Record<string, unknown>;
+    optional?: Record<string, unknown>;
+  };
+  output?: unknown[];
+  output_name?: string[];
+  name?: string;
+  display_name?: string;
+  description?: string;
+  category?: string;
+}
+
+export type ObjectInfo = Record<string, ObjectInfoNode>;
