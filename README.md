@@ -108,6 +108,20 @@ Parameters: `source_url` **or** `image_base64` (one required), `filename` (optio
 
 **Returns:** the stored filename, which can be used as the `image` input in workflow nodes like `LoadImage`.
 
+### Workflow template registry
+
+Save complex workflow JSON once, run them by name later. Templates are stored on disk under `--templates-dir` (defaults to `~/.config/comfyui-mcp/templates/<name>.json`) so they survive restarts and are portable across MCP clients.
+
+| Tool | Description |
+|---|---|
+| `save_workflow_template` | Save a workflow JSON under a named slot. `overwrite=true` to replace. |
+| `list_workflow_templates` | List saved templates with descriptions and last-updated timestamp. |
+| `get_workflow_template` | Fetch a stored template's JSON + metadata. |
+| `delete_workflow_template` | Delete a stored template. |
+| `run_workflow_template` | Run a saved template against ComfyUI and return image URLs. |
+
+Template names must start alphanumeric; `a-z`, `A-Z`, `0-9`, `-`, `_`; max 64 chars.
+
 ### Return format
 
 All generation tools return image URLs served directly by the ComfyUI instance (`http://<comfyui>/view?filename=…`). These URLs can be passed straight to any client that accepts image URLs.
@@ -148,10 +162,10 @@ Requires Node 20+.
 - [x] `upscale_image` — ESRGAN/SwinIR-style model upscale
 - [x] Image proxy endpoint (`/images/<filename>`) for clients that can't reach ComfyUI
 - [x] Configurable public URL for externally-correct image URLs
+- [x] Workflow template registry: `save_workflow_template`, `list_workflow_templates`, `get_workflow_template`, `delete_workflow_template`, `run_workflow_template`
 - [ ] ControlNet workflow helpers (requires ControlNet models on the ComfyUI side)
 - [ ] IP-Adapter workflow helpers
 - [ ] WebSocket progress events for long-running generations
-- [ ] Workflow template registry (save + load named workflows server-side)
 
 ## License
 

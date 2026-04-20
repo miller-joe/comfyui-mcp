@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
 import { startServer } from "./server.js";
+import { defaultTemplatesDir } from "./tools/templates.js";
 
 const { values } = parseArgs({
   options: {
@@ -8,6 +9,7 @@ const { values } = parseArgs({
     port: { type: "string" },
     "comfyui-url": { type: "string" },
     "comfyui-public-url": { type: "string" },
+    "templates-dir": { type: "string" },
     help: { type: "boolean", short: "h" },
   },
 });
@@ -28,6 +30,9 @@ if (values.help) {
       "                              Set this when the internal URL is not reachable from",
       "                              MCP clients (common with Docker networks).",
       "                              (default: same as --comfyui-url, env: COMFYUI_PUBLIC_URL)",
+      "  --templates-dir <path>      Directory for the workflow template registry.",
+      "                              (default: $XDG_CONFIG_HOME/comfyui-mcp/templates or",
+      "                              ~/.config/comfyui-mcp/templates, env: COMFYUI_TEMPLATES_DIR)",
       "  -h, --help                  Show this help",
       "",
       "The server also exposes a /images/<filename> proxy endpoint that streams images",
@@ -44,5 +49,9 @@ const comfyUIUrl =
   values["comfyui-url"] ?? process.env.COMFYUI_URL ?? "http://127.0.0.1:8188";
 const comfyUIPublicUrl =
   values["comfyui-public-url"] ?? process.env.COMFYUI_PUBLIC_URL;
+const templatesDir =
+  values["templates-dir"] ??
+  process.env.COMFYUI_TEMPLATES_DIR ??
+  defaultTemplatesDir();
 
-await startServer({ host, port, comfyUIUrl, comfyUIPublicUrl });
+await startServer({ host, port, comfyUIUrl, comfyUIPublicUrl, templatesDir });

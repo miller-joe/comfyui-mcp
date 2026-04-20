@@ -9,12 +9,18 @@ import { registerRefineTool } from "./tools/refine.js";
 import { registerModelTools } from "./tools/models.js";
 import { registerImageTools } from "./tools/images.js";
 import { registerUpscaleTool } from "./tools/upscale.js";
+import {
+  registerTemplateTools,
+  ensureTemplatesDir,
+  type TemplateStore,
+} from "./tools/templates.js";
 
 export interface ServerConfig {
   host: string;
   port: number;
   comfyUIUrl: string;
   comfyUIPublicUrl?: string;
+  templatesDir: string;
 }
 
 interface Session {
@@ -29,6 +35,9 @@ export async function startServer(config: ServerConfig): Promise<void> {
   });
   const sessions = new Map<string, Session>();
 
+  await ensureTemplatesDir(config.templatesDir);
+  const templateStore: TemplateStore = { dir: config.templatesDir };
+
   const buildServer = () => {
     const s = new McpServer({ name: "comfyui-mcp", version: "0.2.0" });
     registerGenerateTools(s, client);
@@ -36,6 +45,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
     registerUpscaleTool(s, client);
     registerModelTools(s, client);
     registerImageTools(s, client);
+    registerTemplateTools(s, client, templateStore);
     return s;
   };
 
@@ -63,7 +73,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
 
   httpServer.listen(config.port, config.host, () => {
     process.stdout.write(
-      `comfyui-mcp listening on http://${config.host}:${config.port} (ComfyUI: ${config.comfyUIUrl}, public: ${config.comfyUIPublicUrl ?? config.comfyUIUrl})\n`,
+      `comfyui-mcp listening on http://${config.host}:${config.port} (ComfyUI: ${config.comfyUIUrl}, public: ${config.comfyUIPublicUrl ?? config.comfyUIUrl}, templates: ${config.templatesDir})\n`,
     );
   });
 
