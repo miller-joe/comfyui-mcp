@@ -5,7 +5,7 @@ import { BUILTIN_WORKFLOWS } from "../comfyui/workflows.js";
 
 const listModelsSchema = {
   kind: z
-    .enum(["checkpoints", "loras", "samplers", "schedulers"])
+    .enum(["checkpoints", "loras", "samplers", "schedulers", "upscalers"])
     .default("checkpoints")
     .describe("Which category of resource to list"),
 };
@@ -57,7 +57,7 @@ export function registerModelTools(
 
 async function fetchList(
   client: ComfyUIClient,
-  kind: "checkpoints" | "loras" | "samplers" | "schedulers",
+  kind: "checkpoints" | "loras" | "samplers" | "schedulers" | "upscalers",
 ): Promise<string[]> {
   switch (kind) {
     case "checkpoints":
@@ -68,5 +68,7 @@ async function fetchList(
       return client.listSamplers();
     case "schedulers":
       return client.listSchedulers();
+    case "upscalers":
+      return client.listUpscaleModels();
   }
 }

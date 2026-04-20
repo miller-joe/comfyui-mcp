@@ -22,6 +22,11 @@ export interface Img2ImgParams {
   checkpoint: string;
 }
 
+export interface UpscaleParams {
+  sourceImage: string;
+  upscaleModel: string;
+}
+
 export function txt2img(params: Txt2ImgParams): Workflow {
   return {
     "3": {
@@ -114,5 +119,26 @@ export function img2img(params: Img2ImgParams): Workflow {
   };
 }
 
-export const BUILTIN_WORKFLOWS = ["txt2img", "img2img"] as const;
+export function upscale(params: UpscaleParams): Workflow {
+  return {
+    "1": {
+      class_type: "LoadImage",
+      inputs: { image: params.sourceImage },
+    },
+    "2": {
+      class_type: "UpscaleModelLoader",
+      inputs: { model_name: params.upscaleModel },
+    },
+    "3": {
+      class_type: "ImageUpscaleWithModel",
+      inputs: { upscale_model: ["2", 0], image: ["1", 0] },
+    },
+    "4": {
+      class_type: "SaveImage",
+      inputs: { filename_prefix: "comfyui-mcp-upscale", images: ["3", 0] },
+    },
+  };
+}
+
+export const BUILTIN_WORKFLOWS = ["txt2img", "img2img", "upscale"] as const;
 export type BuiltinWorkflow = (typeof BUILTIN_WORKFLOWS)[number];

@@ -13,10 +13,36 @@ import { txt2img } from "./workflows.js";
 const DEFAULT_CHECKPOINT =
   process.env.COMFYUI_DEFAULT_CKPT ?? "sd_xl_base_1.0.safetensors";
 const POLL_INTERVAL_MS = 500;
-const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+const POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
+export interface ComfyUIClientOptions {
+  /** Internal URL used for API calls (e.g. http://comfyui:8188) */
+  baseUrl: string;
+  /**
+   * External URL used when building image URLs returned to clients.
+   * Defaults to baseUrl. Set this when the internal hostname is not
+   * reachable from MCP clients (common in Docker networks).
+   */
+  publicUrl?: string;
+}
 
 export class ComfyUIClient {
-  constructor(private readonly baseUrl: string) {}
+  private readonly baseUrl: string;
+  private readonly publicUrl: string;
+
+  constructor(options: ComfyUIClientOptions | string) {
+    if (typeof options === "string") {
+      this.baseUrl = options;
+      this.publicUrl = options;
+    } else {
+      this.baseUrl = options.baseUrl;
+      this.publicUrl = options.publicUrl ?? options.baseUrl;
+    }
+  }
+
+  getPublicUrl(): string {
+    return this.publicUrl;
+  }
 
   async generate(params: GenerateParams): Promise<GenerateResult> {
     const workflow = txt2img({
@@ -37,7 +63,7 @@ export class ComfyUIClient {
     const entry = await this.waitForCompletion(prompt_id);
     return {
       promptId: prompt_id,
-      images: extractImageUrls(entry, this.baseUrl),
+      images: extractImageUrls(entry, this.publicUrl),
     };
   }
 
@@ -99,6 +125,10 @@ export class ComfyUIClient {
     return this.listNodeOptions("KSampler", "scheduler");
   }
 
+  async listUpscaleModels(): Promise<string[]> {
+    return this.listNodeOptions("UpscaleModelLoader", "model_name");
+  }
+
   async uploadImage(
     data: Buffer | Uint8Array,
     filename: string,
@@ -135,6 +165,11 @@ export class ComfyUIClient {
     const buffer = Buffer.from(await res.arrayBuffer());
     const name = filename ?? deriveFilename(sourceUrl);
     return this.uploadImage(buffer, name);
+  }
+
+  /** Stream an image from ComfyUI back to the caller. Used by /images/ proxy. */
+  async fetchImage(query: URLSearchParams): Promise<Response> {
+    return fetch(`${this.baseUrl}/view?${query.toString()}`);
   }
 
   private async listNodeOptions(

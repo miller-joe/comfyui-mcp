@@ -9,7 +9,7 @@ Part of the [MCP Server Series](https://github.com/miller-joe).
 
 ## Status
 
-v0.1 — core tool set implemented: `generate_image`, `generate_variations`, `generate_with_workflow`, `refine_image`, `list_models`, `list_workflows`, `upload_image`. See Roadmap for what's next.
+v0.2 — core tools plus upscale, image proxy, and public-URL support. Tools: `generate_image`, `generate_variations`, `generate_with_workflow`, `refine_image`, `upscale_image`, `list_models`, `list_workflows`, `upload_image`. See Roadmap for what's next.
 
 ## Install
 
@@ -52,8 +52,15 @@ All options can be set via CLI flag or environment variable:
 |---|---|---|---|
 | `--host` | `MCP_HOST` | `0.0.0.0` | Bind host |
 | `--port` | `MCP_PORT` | `9100` | Bind port |
-| `--comfyui-url` | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI HTTP URL |
+| `--comfyui-url` | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI HTTP URL (used internally by this server to call ComfyUI) |
+| `--comfyui-public-url` | `COMFYUI_PUBLIC_URL` | (same as `--comfyui-url`) | Externally-reachable URL used in image URLs returned to MCP clients. Set this when the internal URL is not reachable from clients (common with Docker networks). |
 | — | `COMFYUI_DEFAULT_CKPT` | `sd_xl_base_1.0.safetensors` | Default checkpoint filename |
+
+### Image URLs returned to clients
+
+Generation tools return image URLs like `<comfyui-public-url>/view?filename=…`. If `--comfyui-public-url` is not set, URLs use the internal `--comfyui-url` value.
+
+The server also exposes a proxy endpoint: `GET /images/<filename>?subfolder=&type=output` streams the image bytes through the MCP server — useful when clients can reach the MCP server but not ComfyUI directly.
 
 The default checkpoint must match a file installed in your ComfyUI `models/checkpoints/` directory. Override via `COMFYUI_DEFAULT_CKPT` or pass `checkpoint` as a tool argument.
 
@@ -138,10 +145,13 @@ Requires Node 20+.
 - [x] `upload_image` — reference images for img2img / ControlNet / IP-Adapter
 - [x] `generate_variations` — batch variations of a prompt
 - [x] `refine_image` — img2img refinement from a source URL
-- [ ] ControlNet / IP-Adapter workflow helpers
-- [ ] Upscale workflow template
-- [ ] Image serving endpoint — return image bytes directly from the MCP server (for clients that can't reach ComfyUI)
+- [x] `upscale_image` — ESRGAN/SwinIR-style model upscale
+- [x] Image proxy endpoint (`/images/<filename>`) for clients that can't reach ComfyUI
+- [x] Configurable public URL for externally-correct image URLs
+- [ ] ControlNet workflow helpers (requires ControlNet models on the ComfyUI side)
+- [ ] IP-Adapter workflow helpers
 - [ ] WebSocket progress events for long-running generations
+- [ ] Workflow template registry (save + load named workflows server-side)
 
 ## License
 

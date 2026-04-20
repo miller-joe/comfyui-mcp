@@ -8,11 +8,13 @@ import { registerGenerateTools } from "./tools/generate.js";
 import { registerRefineTool } from "./tools/refine.js";
 import { registerModelTools } from "./tools/models.js";
 import { registerImageTools } from "./tools/images.js";
+import { registerUpscaleTool } from "./tools/upscale.js";
 
 export interface ServerConfig {
   host: string;
   port: number;
   comfyUIUrl: string;
+  comfyUIPublicUrl?: string;
 }
 
 interface Session {
@@ -21,13 +23,17 @@ interface Session {
 }
 
 export async function startServer(config: ServerConfig): Promise<void> {
-  const client = new ComfyUIClient(config.comfyUIUrl);
+  const client = new ComfyUIClient({
+    baseUrl: config.comfyUIUrl,
+    publicUrl: config.comfyUIPublicUrl ?? config.comfyUIUrl,
+  });
   const sessions = new Map<string, Session>();
 
   const buildServer = () => {
-    const s = new McpServer({ name: "comfyui-mcp", version: "0.1.1" });
+    const s = new McpServer({ name: "comfyui-mcp", version: "0.2.0" });
     registerGenerateTools(s, client);
     registerRefineTool(s, client);
+    registerUpscaleTool(s, client);
     registerModelTools(s, client);
     registerImageTools(s, client);
     return s;
@@ -35,7 +41,11 @@ export async function startServer(config: ServerConfig): Promise<void> {
 
   const httpServer = createServer(async (req, res) => {
     try {
-      await handleRequest(req, res, sessions, buildServer);
+      if (req.url?.startsWith("/images/")) {
+        await handleImageProxy(req, res, client);
+        return;
+      }
+      await handleMcpRequest(req, res, sessions, buildServer);
     } catch (err) {
       if (!res.headersSent) {
         res.statusCode = 500;
@@ -53,7 +63,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
 
   httpServer.listen(config.port, config.host, () => {
     process.stdout.write(
-      `comfyui-mcp listening on http://${config.host}:${config.port} (ComfyUI: ${config.comfyUIUrl})\n`,
+      `comfyui-mcp listening on http://${config.host}:${config.port} (ComfyUI: ${config.comfyUIUrl}, public: ${config.comfyUIPublicUrl ?? config.comfyUIUrl})\n`,
     );
   });
 
@@ -67,7 +77,43 @@ export async function startServer(config: ServerConfig): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
-async function handleRequest(
+async function handleImageProxy(
+  req: IncomingMessage,
+  res: ServerResponse,
+  client: ComfyUIClient,
+): Promise<void> {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const filename = decodeURIComponent(url.pathname.replace(/^\/images\//, ""));
+  if (!filename) {
+    res.statusCode = 400;
+    res.end("filename required");
+    return;
+  }
+  const query = new URLSearchParams({
+    filename,
+    subfolder: url.searchParams.get("subfolder") ?? "",
+    type: url.searchParams.get("type") ?? "output",
+  });
+  const upstream = await client.fetchImage(query);
+  res.statusCode = upstream.status;
+  const contentType = upstream.headers.get("content-type");
+  if (contentType) res.setHeader("Content-Type", contentType);
+  const contentLength = upstream.headers.get("content-length");
+  if (contentLength) res.setHeader("Content-Length", contentLength);
+  if (!upstream.body) {
+    res.end();
+    return;
+  }
+  const reader = upstream.body.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    res.write(value);
+  }
+  res.end();
+}
+
+async function handleMcpRequest(
   req: IncomingMessage,
   res: ServerResponse,
   sessions: Map<string, Session>,
