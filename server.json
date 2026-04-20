@@ -6,12 +6,12 @@
     "url": "https://github.com/miller-joe/comfyui-mcp",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@miller-joe/comfyui-mcp",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:9100/mcp"
