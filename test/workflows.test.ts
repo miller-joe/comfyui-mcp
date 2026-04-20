@@ -45,5 +45,8 @@ test("img2img: uses VAEEncode from LoadImage and custom denoise", () => {
 });
 
 test("BUILTIN_WORKFLOWS lists known templates", () => {
-  assert.deepEqual([...BUILTIN_WORKFLOWS], ["txt2img", "img2img", "upscale"]);
+  assert.deepEqual(
+    [...BUILTIN_WORKFLOWS],
+    ["txt2img", "img2img", "upscale", "controlnet", "ip_adapter"],
+  );
 });
