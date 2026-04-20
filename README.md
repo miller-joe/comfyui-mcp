@@ -108,6 +108,22 @@ Parameters: `source_url` **or** `image_base64` (one required), `filename` (optio
 
 **Returns:** the stored filename, which can be used as the `image` input in workflow nodes like `LoadImage`.
 
+### `generate_with_controlnet`
+
+Generate an image conditioned by a ControlNet preprocessed image (pose skeleton, depth map, canny edges, normal map, etc.) plus a text prompt.
+
+Parameters: `prompt`, `control_image_url` (the preprocessed conditioning image — this tool doesn't run preprocessors), `controlnet_model` (filename from `models/controlnet/`), `strength` (0–2, default 1), `start_percent` / `end_percent` (0–1, when CN is active during sampling), plus standard generation params.
+
+Requires a ControlNet model installed in your ComfyUI `models/controlnet/` directory.
+
+### `generate_with_ip_adapter`
+
+Generate an image using a reference image as a visual/style/subject guide via IP-Adapter.
+
+Parameters: `prompt`, `reference_image_url`, `preset` (e.g. `"STANDARD (medium strength)"`, `"PLUS FACE (portraits)"`, `"VIT-G (medium strength)"`), `weight` (0–3, default 1), `start_at` / `end_at` (0–1), plus standard generation params.
+
+Requires the [ComfyUI-IPAdapter-plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus) custom node pack plus the preset's matching IPAdapter weights and CLIP Vision models.
+
 ### Workflow template registry
 
 Save complex workflow JSON once, run them by name later. Templates are stored on disk under `--templates-dir` (defaults to `~/.config/comfyui-mcp/templates/<name>.json`) so they survive restarts and are portable across MCP clients.
@@ -163,8 +179,8 @@ Requires Node 20+.
 - [x] Image proxy endpoint (`/images/<filename>`) for clients that can't reach ComfyUI
 - [x] Configurable public URL for externally-correct image URLs
 - [x] Workflow template registry: `save_workflow_template`, `list_workflow_templates`, `get_workflow_template`, `delete_workflow_template`, `run_workflow_template`
-- [ ] ControlNet workflow helpers (requires ControlNet models on the ComfyUI side)
-- [ ] IP-Adapter workflow helpers
+- [x] ControlNet workflow helper: `generate_with_controlnet` (requires ControlNet models on the ComfyUI side)
+- [x] IP-Adapter workflow helper: `generate_with_ip_adapter` (requires ComfyUI-IPAdapter-plus pack)
 - [ ] WebSocket progress events for long-running generations
 
 ## License

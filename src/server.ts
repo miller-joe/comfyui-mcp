@@ -9,6 +9,7 @@ import { registerRefineTool } from "./tools/refine.js";
 import { registerModelTools } from "./tools/models.js";
 import { registerImageTools } from "./tools/images.js";
 import { registerUpscaleTool } from "./tools/upscale.js";
+import { registerConditioningTools } from "./tools/conditioning.js";
 import {
   registerTemplateTools,
   ensureTemplatesDir,
@@ -45,6 +46,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
     registerUpscaleTool(s, client);
     registerModelTools(s, client);
     registerImageTools(s, client);
+    registerConditioningTools(s, client);
     registerTemplateTools(s, client, templateStore);
     return s;
   };
