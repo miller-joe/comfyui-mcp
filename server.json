@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.miller-joe/comfyui-mcp",
+  "description": "MCP server for ComfyUI: text-to-image, variations, img2img refine, upscale, image proxy.",
+  "repository": {
+    "url": "https://github.com/miller-joe/comfyui-mcp",
+    "source": "github"
+  },
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@miller-joe/comfyui-mcp",
+      "version": "0.2.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:9100/mcp"
+      },
+      "environmentVariables": [
+        {
+          "name": "COMFYUI_URL",
+          "description": "ComfyUI HTTP URL used internally by this server. Default: http://127.0.0.1:8188",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "COMFYUI_PUBLIC_URL",
+          "description": "Externally-reachable ComfyUI URL used in image URLs returned to clients. Set when the internal URL isn't reachable from MCP clients (common with Docker networks).",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "COMFYUI_DEFAULT_CKPT",
+          "description": "Default checkpoint filename. Default: sd_xl_base_1.0.safetensors",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
