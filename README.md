@@ -50,11 +50,28 @@ All options can be set via CLI flag or environment variable:
 
 | CLI flag | Env var | Default | Description |
 |---|---|---|---|
-| `--host` | `MCP_HOST` | `0.0.0.0` | Bind host |
-| `--port` | `MCP_PORT` | `9100` | Bind port |
+| `--host` | `MCP_HOST` | `0.0.0.0` | Bind host (HTTP mode only) |
+| `--port` | `MCP_PORT` | `9100` | Bind port (HTTP mode only) |
+| `--stdio` | `MCP_TRANSPORT=stdio` | (unset) | Speak MCP over stdio instead of HTTP. Use when launched as a subprocess by a stdio-first MCP client (Claude Desktop, mcp-inspector). |
 | `--comfyui-url` | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI HTTP URL used internally by this server |
 | `--comfyui-public-url` | `COMFYUI_PUBLIC_URL` | same as `--comfyui-url` | External URL in image URLs returned to clients. Set this when the internal URL is not reachable from MCP clients (common with Docker networks). |
 | (no flag) | `COMFYUI_DEFAULT_CKPT` | `sd_xl_base_1.0.safetensors` | Default checkpoint filename |
+
+### Transports
+
+The server speaks streamable HTTP by default (great for Claude Code, MetaMCP, raw `fetch`). Pass `--stdio` (or set `MCP_TRANSPORT=stdio`) to switch into stdio mode, which is what stdio-first clients like Claude Desktop and the MCP Inspector expect:
+
+```bash
+# Claude Desktop config (claude_desktop_config.json):
+{
+  "mcpServers": {
+    "comfyui": {
+      "command": "npx",
+      "args": ["-y", "@miller-joe/comfyui-mcp", "--stdio", "--comfyui-url", "http://127.0.0.1:8188"]
+    }
+  }
+}
+```
 
 ### Image URLs returned to clients
 
