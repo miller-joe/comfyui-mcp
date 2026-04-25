@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
-import { startServer } from "./server.js";
+import { startServer, startStdioServer } from "./server.js";
 import { defaultTemplatesDir } from "./tools/templates.js";
 
 const { values } = parseArgs({
@@ -10,6 +10,7 @@ const { values } = parseArgs({
     "comfyui-url": { type: "string" },
     "comfyui-public-url": { type: "string" },
     "templates-dir": { type: "string" },
+    stdio: { type: "boolean" },
     help: { type: "boolean", short: "h" },
   },
 });
@@ -33,6 +34,10 @@ if (values.help) {
       "  --templates-dir <path>      Directory for the workflow template registry.",
       "                              (default: $XDG_CONFIG_HOME/comfyui-mcp/templates or",
       "                              ~/.config/comfyui-mcp/templates, env: COMFYUI_TEMPLATES_DIR)",
+      "  --stdio                     Speak MCP over stdio instead of starting an HTTP",
+      "                              server. Use this when launched as a subprocess by",
+      "                              an MCP client (Claude Desktop, mcp-inspector, etc.)",
+      "                              (env: MCP_TRANSPORT=stdio)",
       "  -h, --help                  Show this help",
       "",
       "The server also exposes a /images/<filename> proxy endpoint that streams images",
@@ -54,4 +59,10 @@ const templatesDir =
   process.env.COMFYUI_TEMPLATES_DIR ??
   defaultTemplatesDir();
 
-await startServer({ host, port, comfyUIUrl, comfyUIPublicUrl, templatesDir });
+const useStdio = values.stdio || process.env.MCP_TRANSPORT === "stdio";
+const config = { host, port, comfyUIUrl, comfyUIPublicUrl, templatesDir };
+if (useStdio) {
+  await startStdioServer(config);
+} else {
+  await startServer(config);
+}

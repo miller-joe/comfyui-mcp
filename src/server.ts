@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -29,16 +30,13 @@ interface Session {
   transport: StreamableHTTPServerTransport;
 }
 
-export async function startServer(config: ServerConfig): Promise<void> {
+async function buildContext(config: ServerConfig) {
   const client = new ComfyUIClient({
     baseUrl: config.comfyUIUrl,
     publicUrl: config.comfyUIPublicUrl ?? config.comfyUIUrl,
   });
-  const sessions = new Map<string, Session>();
-
   await ensureTemplatesDir(config.templatesDir);
   const templateStore: TemplateStore = { dir: config.templatesDir };
-
   const buildServer = () => {
     const s = new McpServer({ name: "comfyui-mcp", version: "0.2.0" });
     registerGenerateTools(s, client);
@@ -50,6 +48,19 @@ export async function startServer(config: ServerConfig): Promise<void> {
     registerTemplateTools(s, client, templateStore);
     return s;
   };
+  return { client, buildServer };
+}
+
+export async function startStdioServer(config: ServerConfig): Promise<void> {
+  const { buildServer } = await buildContext(config);
+  const server = buildServer();
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+export async function startServer(config: ServerConfig): Promise<void> {
+  const { client, buildServer } = await buildContext(config);
+  const sessions = new Map<string, Session>();
 
   const httpServer = createServer(async (req, res) => {
     try {
