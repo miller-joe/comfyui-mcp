@@ -2,6 +2,7 @@
 
 MCP server for [ComfyUI](https://github.com/comfyanonymous/ComfyUI). Generate images from natural language prompts in any MCP-compatible client.
 
+[![Glama MCP server](https://glama.ai/mcp/servers/miller-joe/comfyui-mcp/badge)](https://glama.ai/mcp/servers/miller-joe/comfyui-mcp)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/miller-joe?style=social&logo=github)](https://github.com/sponsors/miller-joe)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/indivisionjoe)
 
