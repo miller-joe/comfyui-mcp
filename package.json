@@ -1,6 +1,6 @@
 {
   "name": "@miller-joe/comfyui-mcp",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "mcpName": "io.github.miller-joe/comfyui-mcp",
   "description": "MCP server for ComfyUI — text-to-image generation via the Model Context Protocol.",
   "license": "MIT",
@@ -16,6 +16,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
