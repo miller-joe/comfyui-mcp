@@ -8,21 +8,27 @@ const uploadImageSchema = {
     .string()
     .url()
     .optional()
-    .describe("URL to fetch the image from. One of source_url or image_base64 is required."),
+    .describe(
+      "HTTP(S) URL to fetch the image bytes from. Provide exactly one of source_url or image_base64 (if both are given, source_url is used). Optional individually, but at least one source is required.",
+    ),
   image_base64: z
     .string()
     .optional()
     .describe(
-      "Base64-encoded image data (without the data:image/... prefix). One of source_url or image_base64 is required.",
+      "Raw base64-encoded image bytes, WITHOUT any 'data:image/...;base64,' prefix. Provide exactly one of source_url or image_base64. Optional individually, but at least one source is required.",
     ),
   filename: z
     .string()
     .optional()
-    .describe("Filename to save as on the ComfyUI side. Defaults to a timestamped name."),
+    .describe(
+      "Filename to store the image under on the ComfyUI side (referenced later as 'image' in LoadImage nodes). Optional; for source_url it defaults to the URL's basename (or a timestamped .png name), and for image_base64 it defaults to a timestamped 'upload-<ms>.png'.",
+    ),
   overwrite: z
     .boolean()
     .default(false)
-    .describe("Replace an existing file with the same name"),
+    .describe(
+      "Whether to overwrite an existing ComfyUI file with the same name. Default false. Only honored for the image_base64 path; the source_url path always uploads without overwrite.",
+    ),
 };
 
 export function registerImageTools(
@@ -31,7 +37,7 @@ export function registerImageTools(
 ): void {
   server.tool(
     "upload_image",
-    "Upload a reference image to ComfyUI for use in img2img, ControlNet, or IP-Adapter workflows. Accepts either a source URL (will be fetched) or base64-encoded image data. Returns the stored filename for use as 'image' in workflow nodes like LoadImage.",
+    "Uploads an image into ComfyUI's input store so it can be referenced by name in later workflows (LoadImage nodes for img2img, ControlNet, IP-Adapter, etc.). Source is either source_url (fetched over HTTP) or raw image_base64 (provide exactly one; missing both throws). Side effects: writes a file into ComfyUI's input directory on the ComfyUI host; no generation is run; no auth. Returns a text confirmation with the stored filename, its subfolder, and its type. Use this when you want to pre-stage an image for generate_with_workflow / run_workflow_template; note the higher-level tools (refine_image, upscale_image, generate_with_controlnet, generate_with_ip_adapter) already fetch-and-upload their input URLs for you, so you usually do not need to call this first.",
     uploadImageSchema,
     async (args) => {
       if (!args.source_url && !args.image_base64) {

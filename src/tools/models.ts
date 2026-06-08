@@ -7,7 +7,9 @@ const listModelsSchema = {
   kind: z
     .enum(["checkpoints", "loras", "samplers", "schedulers", "upscalers"])
     .default("checkpoints")
-    .describe("Which category of resource to list"),
+    .describe(
+      "Which category of installed resource to list. One of: 'checkpoints' (base models), 'loras', 'samplers', 'schedulers', or 'upscalers'. Default 'checkpoints'. Values are read live from the ComfyUI node definitions (object_info).",
+    ),
 };
 
 export function registerModelTools(
@@ -16,7 +18,7 @@ export function registerModelTools(
 ): void {
   server.tool(
     "list_models",
-    "List available models or samplers on the ComfyUI instance. Use this to discover valid values for the 'checkpoint' parameter of other tools, or to see what LoRAs and samplers are installed.",
+    "Lists the names of one category of resource installed on the connected ComfyUI instance (checkpoints, loras, samplers, schedulers, or upscalers) by querying ComfyUI's /object_info endpoint. Read-only; no side effects, no auth. Returns a text block with the category name, the count, and a numbered list of names (or '(none found)'). Use this first to discover valid values for the 'checkpoint' parameter of the generate/refine/conditioning tools and the 'upscale_model' parameter of upscale_image; use list_workflows to see the built-in workflow templates instead of models.",
     listModelsSchema,
     async (args) => {
       const list = await fetchList(client, args.kind);
@@ -37,7 +39,7 @@ export function registerModelTools(
 
   server.tool(
     "list_workflows",
-    "List built-in workflow templates shipped with this MCP server. These are the named workflows that can be used as a baseline; for arbitrary workflows use generate_with_workflow.",
+    "Lists the built-in workflow names shipped with this MCP server (txt2img, img2img, upscale, controlnet, ip_adapter). Read-only; reads a static in-code list, does not contact ComfyUI, no side effects, no auth. Returns a text block with the count and a numbered list of the built-in workflow names. These name the pipelines exposed by the dedicated tools (generate_image, refine_image, upscale_image, generate_with_controlnet, generate_with_ip_adapter); for an arbitrary custom graph use generate_with_workflow, and for saved user templates use list_workflow_templates.",
     {},
     async () => {
       const body = BUILTIN_WORKFLOWS.map(
